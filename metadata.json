@@ -1,0 +1,7 @@
+{
+  "name": "FloodGuard AI - Satellite Flood Monitoring",
+  "description": "An advanced flood monitoring platform integrating Sentinel-1 SAR imagery, meteorological data, and AI-driven insights to assess flood extent, depth, and socio-economic impact.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
