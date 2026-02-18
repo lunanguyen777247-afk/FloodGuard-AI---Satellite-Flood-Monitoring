@@ -15,6 +15,10 @@ export interface RegionData {
   severity: FloodSeverity;
   affectedPopulation: number;
   estimatedLoss: number; // in billion VND
+  // optional runtime fields
+  tileUrl?: string;
+  geojson?: any;
+  mapStats?: any;
 }
 
 export interface WeatherDay {

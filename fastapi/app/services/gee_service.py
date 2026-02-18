@@ -4,6 +4,10 @@ from typing import Optional, Dict, List, Tuple
 from datetime import datetime, timedelta
 import logging
 from app.core.config import get_settings
+import hashlib
+import time
+import os
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -233,27 +237,45 @@ class GEEService:
         try:
             # Get region geometry
             region = self.get_region_geometry(region_name)
-            
+
+            # Build cache key from region + dates + vis params
+            key_raw = f"{region_name}|{start_date}|{end_date}|png|0|1|white,blue"
+            key = hashlib.sha1(key_raw.encode('utf-8')).hexdigest()
+            cache_dir = getattr(self.settings, 'TILES_CACHE_DIR', './cache/tiles')
+            os.makedirs(cache_dir, exist_ok=True)
+            cache_file = os.path.join(cache_dir, f"{key}.json")
+
+            # Check cache TTL
+            ttl = getattr(self.settings, 'CACHE_TTL', 3600)
+            if os.path.exists(cache_file):
+                try:
+                    with open(cache_file, 'r') as fh:
+                        cached = json.load(fh)
+                    if time.time() - cached.get('ts', 0) < ttl:
+                        return cached.get('result')
+                except Exception:
+                    pass
+
             # Generate flood mask
             flood_mask = self.get_sentinel1_flood_mask(region, start_date, end_date)
-            
+
             # Get DEM
             dem = self.get_dem_data(region)
-            
+
             # Get rainfall data
             rainfall_stats = self.get_rainfall_data(region, start_date, end_date)
-            
+
             # Calculate flood statistics
             flood_stats = self.calculate_flood_statistics(region, flood_mask)
-            
+
             # Generate map URL
             map_id = flood_mask.getMapId({
                 'min': 0,
                 'max': 1,
                 'palette': ['white', 'blue']
             })
-            
-            return {
+
+            result = {
                 'region': region_name,
                 'date_range': {'start': start_date, 'end': end_date},
                 'flood_statistics': flood_stats,
@@ -261,6 +283,14 @@ class GEEService:
                 'map_url': map_id.get('tile_fetcher').url_format,
                 'map_id': map_id.get('mapid')
             }
+
+            try:
+                with open(cache_file, 'w') as fh:
+                    json.dump({'ts': time.time(), 'result': result}, fh)
+            except Exception:
+                pass
+
+            return result
             
         except Exception as e:
             logger.error(f"Error generating flood map: {e}")
@@ -282,22 +312,152 @@ class GEEService:
             Dict: GeoJSON FeatureCollection
         """
         try:
-            # Vectorize flood mask
-            vectors = flood_mask.reduceToVectors(
+            # Vectorize flood mask but limit and simplify to avoid huge payloads
+            vectors = flood_mask.selfMask().reduceToVectors(
                 geometry=region,
                 scale=30,
                 geometryType='polygon',
                 eightConnected=False,
                 maxPixels=1e9
             )
-            
-            # Convert to GeoJSON
-            geojson = vectors.getInfo()
-            
-            return geojson
+
+            fc = ee.FeatureCollection(vectors)
+            # simplify geometries to reduce size
+            fc_simpl = fc.map(lambda f: f.simplify(30))
+
+            # Export to Google Drive asynchronously and return task info
+            file_prefix = f"flood_geo_{int(time.time())}"
+            drive_folder = getattr(self.settings, 'TILES_CACHE_DIR', 'GEE_Exports')
+
+            try:
+                task = ee.batch.Export.table.toDrive(
+                    collection=fc_simpl,
+                    description=f"export_{file_prefix}",
+                    folder=drive_folder,
+                    fileNamePrefix=file_prefix,
+                    fileFormat='GeoJSON'
+                )
+                task.start()
+                return {
+                    'export_task_id': task.id,
+                    'drive_folder': drive_folder,
+                    'fileNamePrefix': file_prefix,
+                    'message': 'Export started; check Tasks in GEE or Drive for completion.'
+                }
+            except Exception:
+                # fallback: try small getInfo() but with try/except
+                try:
+                    geojson = fc_simpl.getInfo()
+                    return geojson
+                except Exception as e:
+                    raise
             
         except Exception as e:
             logger.error(f"Error exporting to GeoJSON: {e}")
+            raise
+
+    def aggregate_admin_summary(
+        self,
+        country_name: str,
+        start_date: str,
+        end_date: str,
+        scale: int = 100
+    ) -> List[Dict]:
+        """
+        Aggregate flood statistics per ADM1 for a country.
+
+        Returns a list of summaries with fields similar to RegionData.
+        """
+        try:
+            adm1 = ee.FeatureCollection("FAO/GAUL/2015/level1").filter(
+                ee.Filter.eq('ADM0_NAME', country_name)
+            )
+
+            # Build flood composite for full country period
+            s1 = ee.ImageCollection('COPERNICUS/S1_GRD') \
+                .filterDate(start_date, end_date) \
+                .filter(ee.Filter.eq('instrumentMode', 'IW')) \
+                .filter(ee.Filter.listContains('transmitterReceiverPolarisation', 'VV')) \
+                .select('VV')
+
+            s1_composite = s1.median()
+
+            # water mask
+            water_mask = s1_composite.lt(-15).rename('water')
+
+            pixel_area = ee.Image.pixelArea()
+            flooded = water_mask.multiply(pixel_area)
+
+            reduced = flooded.reduceRegions(collection=adm1, reducer=ee.Reducer.sum(), scale=scale, maxPixels=1e9)
+
+            features = reduced.getInfo().get('features', [])
+
+            dem = ee.Image('USGS/SRTMGL1_003')
+
+            summary = []
+            for f in features:
+                props = f.get('properties', {})
+                name = props.get('ADM1_NAME') or props.get('NAME_1') or 'Unknown'
+                flooded_m2 = props.get('sum') or 0
+                flooded_ha = flooded_m2 / 10000.0
+
+                geom = f.get('geometry')
+                try:
+                    feat = ee.Feature(ee.Geometry(geom))
+                    total_m2 = feat.geometry().area().getInfo()
+                except Exception:
+                    total_m2 = 1
+
+                total_ha = total_m2 / 10000.0 if total_m2 else 1
+                pct = (flooded_ha / total_ha * 100) if total_ha > 0 else 0
+
+                if pct > 20:
+                    severity = 'Critical'
+                elif pct > 10:
+                    severity = 'High'
+                elif pct > 2:
+                    severity = 'Medium'
+                else:
+                    severity = 'Low'
+
+                # population estimate inside flooded area
+                try:
+                    pop = ee.ImageCollection('WorldPop/GP/100m/pop').first().multiply(water_mask)
+                    pop_stats = pop.reduceRegion(reducer=ee.Reducer.sum(), geometry=ee.Geometry(geom), scale=100, maxPixels=1e9)
+                    affected_pop = int(pop_stats.getInfo().get('population', 0))
+                except Exception:
+                    affected_pop = int(flooded_ha * 10)
+
+                est_loss = flooded_ha * 0.005  # default billion per ha
+
+                # depth proxy using DEM
+                avg_depth = 0.0
+                try:
+                    flooded_mask_img = water_mask.updateMask(water_mask).clip(ee.Geometry(geom))
+                    flooded_dem_mean = dem.updateMask(flooded_mask_img).reduceRegion(ee.Reducer.mean(), geometry=ee.Geometry(geom), scale=scale, maxPixels=1e9).get('elevation')
+                    surrounding_median = dem.updateMask(flooded_mask_img.Not()).reduceRegion(ee.Reducer.median(), geometry=ee.Geometry(geom), scale=scale, maxPixels=1e9).get('elevation')
+                    fm = flooded_dem_mean.getInfo() if flooded_dem_mean is not None else None
+                    sm = surrounding_median.getInfo() if surrounding_median is not None else None
+                    if fm is not None and sm is not None:
+                        d = sm - fm
+                        avg_depth = round(d if d > 0 else 0.0, 2)
+                except Exception:
+                    avg_depth = 0.0
+
+                summary.append({
+                    'name': name,
+                    'flooded_area_ha': round(flooded_ha, 2),
+                    'flooded_pct': round(pct, 2),
+                    'severity': severity,
+                    'avgDepth_m': avg_depth,
+                    'estimated_loss_billion_vnd': round(est_loss, 3),
+                    'affected_population': affected_pop,
+                })
+
+            return summary
+
+        except Exception as e:
+            logger.error(f'Error aggregating admin summary: {e}')
             raise
     
     def get_population_data(self, region: ee.Geometry) -> Dict:

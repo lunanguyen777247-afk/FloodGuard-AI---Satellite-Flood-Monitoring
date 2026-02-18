@@ -116,6 +116,51 @@ async def get_regions(
         raise HTTPException(status_code=500, detail=f"Failed to get regions: {str(e)}")
 
 
+@router.get("/{region_name}/geojson")
+async def get_region_geojson(region_name: str, start_date: Optional[date] = None, end_date: Optional[date] = None):
+    """
+    Return flood extent as GeoJSON for a specific region and date range
+    """
+    try:
+        sd = (start_date or (datetime.utcnow().date())).isoformat()
+        ed = (end_date or (datetime.utcnow().date())).isoformat()
+
+        region_geom = gee_service.get_region_geometry(region_name)
+        flood_mask = gee_service.get_sentinel1_flood_mask(region_geom, sd, ed)
+        geojson = gee_service.export_to_geojson(region_geom, flood_mask)
+
+        return geojson
+    except Exception as e:
+        logger.error(f"Error getting geojson for {region_name}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{region_name}/map")
+async def get_region_map(region_name: str, start_date: Optional[date] = None, end_date: Optional[date] = None):
+    """Return map tile URL and basic stats for region"""
+    try:
+        sd = (start_date or (datetime.utcnow().date())).isoformat()
+        ed = (end_date or (datetime.utcnow().date())).isoformat()
+        result = gee_service.generate_flood_map(region_name, sd, ed)
+        return result
+    except Exception as e:
+        logger.error(f"Error generating map for {region_name}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get('/statistics/admin_summary')
+async def get_admin_summary(start_date: Optional[date] = Query(None), end_date: Optional[date] = Query(None)):
+    """Aggregate flood statistics per ADM1 for the country"""
+    try:
+        sd = (start_date or (datetime.utcnow().date())).isoformat()
+        ed = (end_date or (datetime.utcnow().date())).isoformat()
+        summary = gee_service.aggregate_admin_summary('Viet Nam', sd, ed)
+        return { 'country': 'Viet Nam', 'date_range': {'start': sd, 'end': ed}, 'admin_summary': summary }
+    except Exception as e:
+        logger.error(f"Error computing admin summary: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/{region_id}", response_model=RegionDetail)
 async def get_region_detail(region_id: str):
     """

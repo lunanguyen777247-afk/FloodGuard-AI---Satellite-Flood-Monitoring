@@ -1,0 +1,457 @@
+{
+  "region": "Qu\u1ea3ng Tr\u1ecb",
+  "start": "2024-08-15",
+  "end": "2024-08-22",
+  "results": [
+    {
+      "vv": -20,
+      "ratio": -4,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": -4,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": -4,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": -3,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": -3,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": -3,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": -2,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": -2,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": -2,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": -1,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": -1,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": -1,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": 0,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": 0,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -20,
+      "ratio": 0,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": -4,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": -4,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": -4,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": -3,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": -3,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": -3,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": -2,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": -2,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": -2,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": -1,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": -1,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": -1,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": 0,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": 0,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -17.5,
+      "ratio": 0,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": -4,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": -4,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": -4,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": -3,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": -3,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": -3,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": -2,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": -2,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": -2,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": -1,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": -1,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": -1,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": 0,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": 0,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -15,
+      "ratio": 0,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": -4,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": -4,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": -4,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": -3,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": -3,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": -3,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": -2,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": -2,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": -2,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": -1,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": -1,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": -1,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": 0,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": 0,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -12.5,
+      "ratio": 0,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": -4,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": -4,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": -4,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": -3,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": -3,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": -3,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": -2,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": -2,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": -2,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": -1,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": -1,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": -1,
+      "k": 0.75,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": 0,
+      "k": 0.25,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": 0,
+      "k": 0.5,
+      "score": null
+    },
+    {
+      "vv": -10,
+      "ratio": 0,
+      "k": 0.75,
+      "score": null
+    }
+  ]
+}

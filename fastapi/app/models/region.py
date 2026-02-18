@@ -113,3 +113,24 @@ class FloodStatistics(BaseModel):
     high_risk_regions: int = Field(..., description="Number of high-risk regions")
     critical_regions: int = Field(..., description="Number of critical regions")
     last_updated: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AdminSummaryItem(BaseModel):
+    name: str
+    flooded_area_ha: float
+    flooded_pct: float
+    severity: str
+    avgDepth_m: float = 0.0
+    estimated_loss_billion_vnd: float = 0.0
+    affected_population: int = 0
+
+
+class AdminSummaryResponse(BaseModel):
+    country: str
+    date_range: dict
+    admin_summary: List[AdminSummaryItem]
+
+
+class GeoJSONResponse(BaseModel):
+    type: str
+    features: List[dict]

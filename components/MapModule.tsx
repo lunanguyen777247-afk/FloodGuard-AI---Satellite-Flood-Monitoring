@@ -1,5 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { Layers, MapPin, Search, Maximize2, MousePointer2, Radar, ShieldAlert } from 'lucide-react';
 // Import FloodSeverity enum to resolve reference errors
 import { RegionData, FloodSeverity } from '../types';
@@ -18,6 +20,70 @@ export const MapModule: React.FC<MapModuleProps> = ({ regions }) => {
     }, 50);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch map tile URLs and GeoJSON outlines for provided regions
+  useEffect(() => {
+    async function fetchMapData() {
+      const updated = await Promise.all(regions.map(async (r) => {
+        try {
+          const mapResp = await fetch(`/api/regions/${encodeURIComponent(r.name)}/map`);
+          const mapJson = mapResp.ok ? await mapResp.json() : null;
+          const geoResp = await fetch(`/api/regions/${encodeURIComponent(r.name)}/geojson`);
+          const geoJson = geoResp.ok ? await geoResp.json() : null;
+
+          return {
+            ...r,
+            tileUrl: mapJson?.map_url,
+            mapStats: mapJson?.flood_statistics,
+            geojson: geoJson,
+          } as RegionData;
+        } catch (e) {
+          return r;
+        }
+      }));
+
+      // set local overlay state
+      setOverlayRegions(updated);
+    }
+
+    fetchMapData();
+  }, [regions]);
+
+  const [overlayRegions, setOverlayRegions] = useState<RegionData[]>(regions);
+  const mapRef = useRef<L.Map | null>(null);
+  const geoLayerRef = useRef<L.GeoJSON | null>(null);
+
+  useEffect(() => {
+    // initialize leaflet map once
+    if (!mapRef.current) {
+      const map = L.map('leaflet-map', { center: [15.5, 107.0], zoom: 7 });
+      mapRef.current = map;
+    }
+
+    // if there is a tileUrl from first region, set tile layer
+    const tileUrl = overlayRegions.find(r => r.tileUrl)?.tileUrl;
+    if (tileUrl && mapRef.current) {
+      // remove existing tile layers
+      mapRef.current.eachLayer((layer: any) => {
+        if ((layer as any)._url) mapRef.current?.removeLayer(layer);
+      });
+      L.tileLayer(tileUrl, { maxZoom: 18, attribution: '© Earth Engine' }).addTo(mapRef.current);
+    }
+
+    // draw geojson overlays
+    const geo = overlayRegions.find(r => r.geojson)?.geojson;
+    if (geo && mapRef.current) {
+      if (geoLayerRef.current) {
+        geoLayerRef.current.clearLayers();
+        geoLayerRef.current.addData(geo);
+      } else {
+        geoLayerRef.current = L.geoJSON(geo, { style: { color: '#3b82f6', weight: 2, fillOpacity: 0.25 } }).addTo(mapRef.current);
+      }
+      try {
+        mapRef.current.fitBounds(geoLayerRef.current.getBounds(), { maxZoom: 12 });
+      } catch {}
+    }
+  }, [overlayRegions]);
 
   return (
     <div className="h-[calc(100vh-12rem)] flex gap-6 animate-in slide-in-from-bottom-4 duration-700">
@@ -43,26 +109,54 @@ export const MapModule: React.FC<MapModuleProps> = ({ regions }) => {
 
         {/* Interactive Layers Visualization */}
         <svg className="absolute inset-0 w-full h-full z-10 pointer-events-none" viewBox="0 0 800 600">
-          <path 
-            d="M 150 100 Q 280 50 350 220 T 450 150 T 550 280 Q 620 400 480 450 T 320 480 T 150 380 Z" 
-            fill={selectedLayer === 'sar' ? 'rgba(59, 130, 246, 0.4)' : (selectedLayer === 'rainfall' ? 'rgba(14, 165, 233, 0.3)' : 'rgba(234, 179, 8, 0.2)')}
-            stroke={selectedLayer === 'sar' ? '#3b82f6' : '#94a3b8'}
-            strokeWidth="2"
-            strokeDasharray="5,5"
-            className="animate-pulse"
-          />
-          
-          {regions.map((r, idx) => (
-            <g key={r.id} transform={`translate(${200 + idx * 100}, ${150 + idx * 70})`} className="pointer-events-auto cursor-pointer group/pin">
-              <circle r="6" fill="#f43f5e" className="animate-ping opacity-75" />
-              <circle r="4" fill="#f43f5e" />
-              <g className="opacity-0 group-hover/pin:opacity-100 transition-opacity">
-                <rect x="12" y="-12" width="120" height="40" rx="8" fill="rgba(15, 23, 42, 0.9)" stroke="#334155" />
-                <text x="20" y="5" fill="#f8fafc" className="text-[10px] font-bold">{r.name}</text>
-                <text x="20" y="18" fill="#3b82f6" className="text-[9px] font-black">{r.submergedArea} ha / {r.avgDepth}m</text>
-              </g>
-            </g>
-          ))}
+          {/* If geojson available, draw outlines scaled into viewBox */}
+          {overlayRegions.map((r, idx) => {
+            if (!r.geojson || !r.geojson.features || r.geojson.features.length === 0) {
+              // fallback: draw a pin at calculated position
+              return (
+                <g key={r.id} transform={`translate(${200 + idx * 100}, ${150 + idx * 70})`} className="pointer-events-auto cursor-pointer group/pin">
+                  <circle r="6" fill="#f43f5e" className="animate-ping opacity-75" />
+                  <circle r="4" fill="#f43f5e" />
+                </g>
+              );
+            }
+
+            // compute bbox of features to map to 0..800 x 0..600
+            let coords: number[][] = [];
+            r.geojson.features.forEach((f: any) => {
+              const geom = f.geometry;
+              if (geom.type === 'Polygon') {
+                geom.coordinates[0].forEach((pt: number[]) => coords.push(pt));
+              } else if (geom.type === 'MultiPolygon') {
+                geom.coordinates.forEach((poly: any) => poly[0].forEach((pt: number[]) => coords.push(pt)));
+              }
+            });
+
+            if (coords.length === 0) return null;
+
+            const lons = coords.map(c => c[0]);
+            const lats = coords.map(c => c[1]);
+            const minLon = Math.min(...lons), maxLon = Math.max(...lons);
+            const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+
+            const w = 800, h = 600;
+            const lonToX = (lon: number) => ((lon - minLon) / (maxLon - minLon || 1)) * w;
+            const latToY = (lat: number) => (1 - (lat - minLat) / (maxLat - minLat || 1)) * h;
+
+            return r.geojson.features.map((f: any, fi: number) => {
+              let pathD = '';
+              const geom = f.geometry;
+              if (geom.type === 'Polygon') {
+                pathD = geom.coordinates[0].map((pt: number[], i: number) => `${i===0?'M':'L'} ${lonToX(pt[0])} ${latToY(pt[1])}`).join(' ') + ' Z';
+              } else if (geom.type === 'MultiPolygon') {
+                pathD = geom.coordinates.map((poly: any) => poly[0].map((pt: number[], i: number) => `${i===0?'M':'L'} ${lonToX(pt[0])} ${latToY(pt[1])}`).join(' ') + ' Z').join(' ');
+              }
+
+              return (
+                <path key={`${r.id}-${fi}`} d={pathD} fill="rgba(59,130,246,0.25)" stroke="#3b82f6" strokeWidth={1.5} />
+              );
+            });
+          })}
         </svg>
 
         {/* Floating Map Intelligence UI */}

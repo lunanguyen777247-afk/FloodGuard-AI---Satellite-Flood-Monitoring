@@ -8,7 +8,9 @@ import os
 from dotenv import load_dotenv
 
 # Load environment
-env_path = Path(__file__).parent / "fastapi" / ".env"
+script_dir = Path(__file__).parent  # app/gee
+project_root = script_dir.parent.parent.parent  # root
+env_path = project_root / "fastapi" / ".env"
 load_dotenv(env_path)
 
 service_account = os.getenv("GEE_SERVICE_ACCOUNT")
@@ -20,10 +22,12 @@ print("=" * 60)
 
 # Kiểm tra file khóa
 key_file = Path(key_path)
+if not key_file.is_absolute():
+    key_file = project_root / key_path
 if key_file.exists():
     with open(key_file, 'r') as f:
         key_data = json.load(f)
-    print(f"\n✓ File khóa: {key_path}")
+    print(f"\n✓ File khóa: {key_file}")
     print(f"✓ Project ID: {key_data.get('project_id')}")
     print(f"✓ Service Account: {key_data.get('client_email')}")
     
@@ -37,7 +41,7 @@ try:
     print(f"\n✓ earthengine-api: Đã cài đặt")
     
     # Initialize
-    credentials = ee.ServiceAccountCredentials(service_account, str(key_path))
+    credentials = ee.ServiceAccountCredentials(service_account, str(key_file))
     ee.Initialize(credentials)
     print(f"✓ GEE: Khởi tạo thành công")
     
