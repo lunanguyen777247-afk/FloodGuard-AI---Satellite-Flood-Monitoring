@@ -61,12 +61,15 @@ wheels/
 .installed.cfg
 *.egg
 
-# Cache
+# Cache & Analysis Results
 .cache/
 cache/
 *.cache
 tile_cache/
 .pytest_cache/
+flood_analysis_results/
+analysis_output/
+gee_exports/
 
 # Database
 *.db
